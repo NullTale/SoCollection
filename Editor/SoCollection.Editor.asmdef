@@ -1,0 +1,18 @@
+{
+    "name": "SoCollection.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:993b9d0cd2aafa1499be1091cfb8588d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
