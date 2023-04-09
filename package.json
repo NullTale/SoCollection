@@ -3,7 +3,7 @@
   "displayName": "SoCollection",
   "version": "1.0.0",
   "unity": "2020.3",
-  "description": "List of nested scriptable objects",
+  "description": "Nested scriptable objects list",
   "documentationUrl": "https://github.com/NullTale/SoCollection",
   "author": {
     "name": "NullTale",
