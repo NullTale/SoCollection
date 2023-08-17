@@ -1,6 +1,6 @@
 # SoCollection
  
-SoCollection<> is an generic type thet allows easily create and edit nested ScriptableObjects collections.<br>It can be useful to create and access to polymorphic set of objects.
+SoCollection<> is an generic type thet allows easily create and edit nested ScriptableObjects collections.<br>It can be useful to create and access to a polymorphic set of objects.
 
 ![Demonstration](https://user-images.githubusercontent.com/1497430/231393793-d3eb0068-212c-4550-b6f6-422ce72583bd.gif)
 
