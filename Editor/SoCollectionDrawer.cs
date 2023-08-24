@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
@@ -205,6 +206,25 @@ namespace SoCollection
                         }
                     }
 
+                    
+                    var uniqueAtr = fieldInfo.GetCustomAttribute<SoCollectionUniqueAttribute>(true);
+                    if (uniqueAtr != null)
+                    {
+                        for (var n = 0; n < list.count; n++)
+                        {
+                            var item = propertyList.GetArrayElementAtIndex(n).objectReferenceValue;
+                            if (item == null)
+                                continue;
+                            
+                            if (uniqueAtr._except.Contains(item.GetType()))
+                                continue;
+                            
+                            var typeName = item.GetType().Name;
+                            var toRemove = options.FirstOrDefault(n => n.Key == typeName);
+                            options.Remove(toRemove);
+                        }
+                    }
+                    
                     // check real options count
                     if (options.Count == 1)
                     {
