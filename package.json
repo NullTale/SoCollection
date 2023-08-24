@@ -1,7 +1,7 @@
 {
   "name": "www.nulltale.socollection",
   "displayName": "SoCollection",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "unity": "2020.3",
   "description": "Nested scriptable objects list",
   "documentationUrl": "https://github.com/NullTale/SoCollection",
