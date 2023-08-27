@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditorInternal;
@@ -47,12 +48,13 @@ namespace SoCollection
         {
             if (m_List == null)
             {
-                var propertyList = property.FindPropertyRelative("m_List");
+                var propertyList   = property.FindPropertyRelative("m_List");
                 var collectionType = propertyList.GetSerializedValue<object>().GetType().GetGenericArguments().First();
+                var formatAtr      = fieldInfo.GetCustomAttribute<SocFormatAttribute>(true);
 
                 // setup types, create list
                 var types = new List<Type>();
-                if (attribute is SoCollectionTypesAttribute attr)
+                if (attribute is SocTypesAttribute attr)
                     types.AddRange(attr.Types);
 
                 if (types.IsEmpty())
@@ -193,7 +195,7 @@ namespace SoCollection
                     if (shiftHeld || types.IsEmpty())
                     {
                         var derived = TypeCache.GetTypesDerivedFrom(collectionType)
-                                     .Where(type => type.IsAbstract == false && type.IsGenericTypeDefinition == false && type.HasAttribute<SoCollectionIgnoreAttribute>() == false)
+                                     .Where(type => type.IsAbstract == false && type.IsGenericTypeDefinition == false && type.HasAttribute<SocIgnoreAttribute>() == false)
                                      .Except(new[] { collectionType })
                                      .Select(type => new KeyValuePair<string, Action>(type.Name, () => _createElementOfType(type)))
                                      .ToList();
@@ -205,9 +207,9 @@ namespace SoCollection
                             options.AddRange(derived);
                         }
                     }
-
                     
-                    var uniqueAtr = fieldInfo.GetCustomAttribute<SoCollectionUniqueAttribute>(true);
+                    // apply unique filter to the final result
+                    var uniqueAtr = fieldInfo.GetCustomAttribute<SocUniqueAttribute>(true);
                     if (uniqueAtr != null)
                     {
                         for (var n = 0; n < list.count; n++)
@@ -238,7 +240,7 @@ namespace SoCollection
                             if (string.IsNullOrEmpty(option.Key))
                                 menu.AddSeparator(string.Empty);
                             else
-                                menu.AddItem(new GUIContent(option.Key), false, option.Value.Invoke);
+                                menu.AddItem(new GUIContent(_format(option.Key)), false, option.Value.Invoke);
                         }
 
                         menu.ShowAsContext();
@@ -247,16 +249,36 @@ namespace SoCollection
                     // ===================================
                     void _createElementOfType(object type)
                     {
-                        propertyList.arraySize++;
+                        propertyList.arraySize ++;
+                        
+                        var element = ScriptableObject.CreateInstance((Type)type);
+                        var varName = _format(element.GetType().Name);
 
                         // create
-                        var element = ScriptableObject.CreateInstance((Type)type);
-                        element.name = ObjectNames.NicifyVariableName(element.GetType().Name);
+                        element.name = varName;
                         AssetDatabase.AddObjectToAsset(element, propertyList.serializedObject.targetObject);
                         AssetDatabase.SaveAssets();
                         propertyList.GetArrayElementAtIndex(propertyList.arraySize - 1).objectReferenceValue = element;
 
                         propertyList.serializedObject.ApplyModifiedProperties();
+                    }
+                    
+                    string _format(string varName)
+                    {
+                        if (formatAtr != null)
+                        {
+                            var regex = new Regex(formatAtr._regexClear);
+                            varName = regex.Replace(varName, "");
+                            varName = string.Format(varName, formatAtr._format);
+                            if (formatAtr._nicify)
+                                varName = ObjectNames.NicifyVariableName(varName);
+                        }
+                        else
+                        {
+                            varName = ObjectNames.NicifyVariableName(varName);
+                        }
+                        
+                        return varName;
                     }
 
                     void _addExistingElement(object element)

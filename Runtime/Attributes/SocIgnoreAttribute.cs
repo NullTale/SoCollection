@@ -4,7 +4,7 @@ using UnityEngine;
 namespace SoCollection
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    public class SoCollectionIgnoreAttribute : PropertyAttribute
+    public class SocIgnoreAttribute : PropertyAttribute
     {
     }
 }

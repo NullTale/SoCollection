@@ -4,11 +4,11 @@ using UnityEngine;
 namespace SoCollection
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-    public class SoCollectionTypesAttribute : PropertyAttribute
+    public class SocTypesAttribute : PropertyAttribute
     {
         public Type[] Types;
 
-        public SoCollectionTypesAttribute(params Type[] types)
+        public SocTypesAttribute(params Type[] types)
         {
             Types = types;
         }
