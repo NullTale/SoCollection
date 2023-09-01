@@ -247,40 +247,6 @@ namespace SoCollection
                     }
 
                     // ===================================
-                    void _createElementOfType(object type)
-                    {
-                        propertyList.arraySize ++;
-                        
-                        var element = ScriptableObject.CreateInstance((Type)type);
-                        var varName = _format(element.GetType().Name);
-
-                        // create
-                        element.name = varName;
-                        AssetDatabase.AddObjectToAsset(element, propertyList.serializedObject.targetObject);
-                        AssetDatabase.SaveAssets();
-                        propertyList.GetArrayElementAtIndex(propertyList.arraySize - 1).objectReferenceValue = element;
-
-                        propertyList.serializedObject.ApplyModifiedProperties();
-                    }
-                    
-                    string _format(string varName)
-                    {
-                        if (formatAtr != null)
-                        {
-                            var regex = new Regex(formatAtr._regexClear);
-                            varName = regex.Replace(varName, "");
-                            varName = string.Format(varName, formatAtr._format);
-                            if (formatAtr._nicify)
-                                varName = ObjectNames.NicifyVariableName(varName);
-                        }
-                        else
-                        {
-                            varName = ObjectNames.NicifyVariableName(varName);
-                        }
-                        
-                        return varName;
-                    }
-
                     void _addExistingElement(object element)
                     {
                         propertyList.arraySize++;
@@ -327,12 +293,46 @@ namespace SoCollection
                     {
                         var menu = new GenericMenu();
                         menu.AddItem(new GUIContent("Sort"), false, () =>
+                        menu.AddItem(new GUIContent("Sort Alphabetic"), false, () =>
                         {
                             var objects = propertyList.GetList().Select(n => n.objectReferenceValue).OrderBy(n => n.name).ToList();
                             propertyList.SetList(objects);
                             propertyList.serializedObject.ApplyModifiedProperties();
                         });
+                        menu.AddItem(new GUIContent("Add All Unique"), false, () =>
+                        {
+                            var set = _collectionTypes();
+                            var toCreate = types.IsEmpty() ? TypeCache.GetTypesDerivedFrom(collectionType)
+                                     .Where(type => type.IsAbstract == false && type.IsGenericTypeDefinition == false && set.Contains(type) == false)
+                                     .Except(new[] { collectionType })
+                                     .ToList() : types.ToList();
+                            
+                            var uniqueAtr = fieldInfo.GetCustomAttribute<SocUniqueAttribute>(true);
+                            if (uniqueAtr != null)
+                            {
+                                foreach (var type in uniqueAtr._except)
+                                    toCreate.Remove(type);
+                            }
+                            
+                            foreach (var type in toCreate)
+                                _createElementOfType(type);
 
+                            // -----------------------------------------------------------------------
+                            HashSet<Type> _collectionTypes()
+                            {
+                                var result = new HashSet<Type>();
+
+                                for (var n = 0; n < propertyList.arraySize; n++)
+                                {
+                                    var el = propertyList.GetArrayElementAtIndex(n);
+                                    if (el.objectReferenceValue == null)
+                                        continue;
+                                    result.Add(el.objectReferenceValue?.GetType());
+                                }
+
+                                return result;
+                            }
+                        });
                         menu.ShowAsContext();
                     }
 
@@ -344,6 +344,41 @@ namespace SoCollection
 
                     return propertyList.GetArrayElementAtIndex(index).GetObjectReferenceHeight();
                 };
+                
+                // =======================================================================
+                void _createElementOfType(object type)
+                {
+                    propertyList.arraySize ++;
+                    
+                    var element = ScriptableObject.CreateInstance((Type)type);
+                    var varName = _format(element.GetType().Name);
+
+                    // create
+                    element.name = varName;
+                    AssetDatabase.AddObjectToAsset(element, propertyList.serializedObject.targetObject);
+                    AssetDatabase.SaveAssets();
+                    propertyList.GetArrayElementAtIndex(propertyList.arraySize - 1).objectReferenceValue = element;
+
+                    propertyList.serializedObject.ApplyModifiedProperties();
+                }
+                
+                string _format(string varName)
+                {
+                    if (formatAtr != null)
+                    {
+                        var regex = new Regex(formatAtr._regexClear);
+                        varName = regex.Replace(varName, "");
+                        varName = string.Format(varName, formatAtr._format);
+                        if (formatAtr._nicify)
+                            varName = ObjectNames.NicifyVariableName(varName);
+                    }
+                    else
+                    {
+                        varName = ObjectNames.NicifyVariableName(varName);
+                    }
+                    
+                    return varName;
+                }
             }
 
             return m_List;
