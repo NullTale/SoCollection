@@ -3,11 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace SoCollection
 {
     [Serializable]
     public class SoCollection<T> : IReadOnlyDictionary<string, T>, IList<T>
+    public class SoCollection<T> : IReadOnlyDictionary<string, T>, IList<T>, IDisposable
         where T : ScriptableObject
     {
         [SerializeField]
@@ -127,6 +129,18 @@ namespace SoCollection
             
             value = val;
             return true;
+        }
+	
+        public void Dispose()
+        {
+#if UNITY_EDITOR
+            foreach (var obj in m_List)
+            {
+                UnityEditor.AssetDatabase.RemoveObjectFromAsset(obj);
+                Object.DestroyImmediate(obj);
+            }
+            UnityEditor.AssetDatabase.SaveAssets();
+#endif
         }
     }
 }
