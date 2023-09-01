@@ -8,7 +8,6 @@ using Object = UnityEngine.Object;
 namespace SoCollection
 {
     [Serializable]
-    public class SoCollection<T> : IReadOnlyDictionary<string, T>, IList<T>
     public class SoCollection<T> : IReadOnlyDictionary<string, T>, IList<T>, IDisposable
         where T : ScriptableObject
     {

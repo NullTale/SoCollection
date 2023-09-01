@@ -17,13 +17,53 @@ namespace SoCollection
         private ReorderableList m_List;
 
         // =======================================================================
+        public class DisablingScope : IDisposable
+        {
+            private static int s_DisableCounter = 0;
+
+            private bool m_Disable;
+
+            // -----------------------------------------------------------------------
+            public void Dispose()
+            {
+                if (m_Disable && (-- s_DisableCounter <= 0))
+                    GUI.enabled = true;
+            }
+
+            public DisablingScope(bool disable = true)
+            {
+                m_Disable = disable;
+                if (m_Disable && (++ s_DisableCounter > 0))
+                    GUI.enabled = false;
+            }
+        }
+        
+        // =======================================================================
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             try
             {
                 var list = _getList(property);
-                list.DoList(position);
-                list.GetHeight();
+           
+                var headerRect = position;
+                headerRect.height = EditorGUIUtility.singleLineHeight;
+                property.isExpanded =  EditorGUI.Foldout(headerRect, property.isExpanded, GUIContent.none, true);
+                
+                if (property.isExpanded == false)
+                {
+                    ReorderableList.defaultBehaviours.DrawHeaderBackground(headerRect);
+                    headerRect.xMin     += 6f;
+                    headerRect.xMax     -= 6f;
+                    headerRect.height   -= 2f;
+                    headerRect.y        += 1f;
+                    list.drawHeaderCallback.Invoke(headerRect);
+                }
+                else
+                {
+                    list.DoList(position);
+                    list.GetHeight();
+                }
+                
             }
             catch
             {
@@ -35,6 +75,9 @@ namespace SoCollection
         {
             try
             {
+                if (property.isExpanded == false)
+                    return EditorGUIUtility.singleLineHeight;
+                
                 return _getList(property).GetHeight();
             }
             catch
@@ -74,7 +117,7 @@ namespace SoCollection
                     var isInner = element.objectReferenceValue != null && element.serializedObject.GetNestedAssets().Contains(element.objectReferenceValue);
 
                     // ref
-                    using (new Utils.DisablingScope(isInner))
+                    using (new DisablingScope(isInner))
                     {
                         EditorGUI.BeginChangeCheck();
                         var picked = EditorGUI.ObjectField(rect.WithHeight(EditorGUIUtility.singleLineHeight), new GUIContent(" "), element.objectReferenceValue, types.FirstOrDefault() ?? collectionType, false);
@@ -86,7 +129,6 @@ namespace SoCollection
                                 Debug.Log($"Can't add object {picked} with duplicated name {picked.name}");
                         }
                     }
-
 
                     if (hasValue)
                         element.isExpanded = EditorGUI.Foldout(rect.WithHeight(EditorGUIUtility.singleLineHeight).WithWidth(5), element.isExpanded, GUIContent.none, toggleOnLabelClick: true);
@@ -117,7 +159,7 @@ namespace SoCollection
                     }
                     else
                     {
-                        using (new Utils.DisablingScope())
+                        using (new DisablingScope())
                             EditorGUI.TextField(rect.Label(), element.objectReferenceValue?.name ?? string.Empty);
 
                         element.DrawObjectReference(rect);
@@ -289,10 +331,14 @@ namespace SoCollection
                     }
                     EditorGUI.LabelField(rect, new GUIContent(property.displayName, "Hold shift to see all options"), style);
                     
+                    if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && rect.Contains(Event.current.mousePosition))
+                    {
+                        property.isExpanded = !property.isExpanded;
+                    }
+                    
                     if (Event.current.type == EventType.MouseDown && Event.current.button == 1 && rect.Contains(Event.current.mousePosition))
                     {
                         var menu = new GenericMenu();
-                        menu.AddItem(new GUIContent("Sort"), false, () =>
                         menu.AddItem(new GUIContent("Sort Alphabetic"), false, () =>
                         {
                             var objects = propertyList.GetList().Select(n => n.objectReferenceValue).OrderBy(n => n.name).ToList();
@@ -335,7 +381,6 @@ namespace SoCollection
                         });
                         menu.ShowAsContext();
                     }
-
                 };
                 m_List.elementHeightCallback = index =>
                 {
